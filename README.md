@@ -229,15 +229,27 @@ Token 格式说明：
 pnpm run gen:yapi-files
 ```
 
+可选：自定义生成文件位置（已有文件会直接覆盖内容）
+
+```bash
+pnpm run gen:yapi-files -- \
+  --output-dir=generated \
+  --api-output-path=generated/api.ts \
+  --type-output-path=generated/type.ts
+```
+
 ### 生成规则（当前实现）
 
 - 读取并校验 `docs/ajax.md`，确保 `ajax.get/post/getList/postList/getPage/postPage` 约定存在
 - 从 YApi 拉取分类与接口详情，并按 `method + path` 稳定排序生成
 - 函数命名可读化，例如：`getSpielenPcPageApi`、`postSpielenAnfangWerbenAddApi`
 - 类型命名可读化，例如：`GetSpielenPcPageParams`、`GetSpielenPcPageResponse`
+- `List/Page` 场景下，`Response` 类型只取 `data.list` 的单项结构
 - 空类型处理：
   - 空入参：不生成 `Params`，函数不带 `data`
   - 空返回：不生成 `Response`，调用不带泛型
+- 生成内容按项目分段插入（`// projectId: xxx`）
+- 生成后自动使用 Prettier 格式化
 - 自动选择 ajax 方法：
   - 普通对象：`get/post`
   - `data.list`：`getList/postList`
@@ -248,7 +260,12 @@ pnpm run gen:yapi-files
 ```env
 # 必需
 YAPI_BASE_URL=https://your-yapi-domain.com
-YAPI_TOKEN=projectId:your_token_here
+# 方式1：合并变量（支持多项目）
+YAPI_TOKEN=projectId:your_token_here,projectId2:your_token2_here
+
+# 方式2：拆分变量（单项目推荐）
+# YAPI_PROJECT_ID=projectId
+# YAPI_PROJECT_TOKEN=your_token_here
 
 # 可选：强制网关前缀，优先级高于项目 basepath
 YAPI_GATEWAY_PREFIX=/your-gateway
@@ -264,6 +281,8 @@ YAPI_GATEWAY_PREFIX=/your-gateway
 | ------------------ | ----------------------------- | ------------------------------------------ | ------ |
 | `--yapi-base-url`  | YApi 服务器基础 URL           | `--yapi-base-url=https://yapi.example.com` | -      |
 | `--yapi-token`     | YApi 项目 Token（支持多项目） | `--yapi-token=1026:token1,1027:token2`     | -      |
+| `--yapi-project-id` | 单项目ID（与token配套）       | `--yapi-project-id=1026`                   | -      |
+| `--yapi-project-token` | 单项目token（与ID配套）    | `--yapi-project-token=token1`              | -      |
 | `--yapi-cache-ttl` | 缓存时效（分钟）              | `--yapi-cache-ttl=10`                      | 10     |
 | `--yapi-log-level` | 日志级别                      | `--yapi-log-level=info`                    | info   |
 | `--port`           | HTTP 服务端口（SSE 模式）     | `--port=3305`                              | 3305   |
@@ -276,7 +295,14 @@ YAPI_GATEWAY_PREFIX=/your-gateway
 ```env
 # 必需配置
 YAPI_BASE_URL=https://your-yapi-domain.com
-YAPI_TOKEN=projectId:your_token_here
+
+# 二选一：
+# 1) 合并变量（支持多项目）
+YAPI_TOKEN=projectId:your_token_here,projectId2:your_token2_here
+
+# 2) 拆分变量（单项目）
+# YAPI_PROJECT_ID=projectId
+# YAPI_PROJECT_TOKEN=your_token_here
 
 # 可选配置
 PORT=3305                    # HTTP 服务端口

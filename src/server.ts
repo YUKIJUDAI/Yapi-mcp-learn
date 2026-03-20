@@ -134,12 +134,20 @@ export class YapiMcpServer {
   /**
    * 执行生成脚本
    */
-  private async runGenerateScript(): Promise<{ success: boolean; output: string }> {
+  private async runGenerateScript(
+    envOverrides?: Partial<Record<string, string>>,
+    scriptArgs?: string[],
+  ): Promise<{ success: boolean; output: string }> {
     return new Promise((resolve) => {
       const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-      const child = spawn(command, ["run", "gen:yapi-files"], {
+      const runArgs = ["run", "gen:yapi-files"];
+      if (scriptArgs && scriptArgs.length > 0) {
+        runArgs.push("--", ...scriptArgs);
+      }
+
+      const child = spawn(command, runArgs, {
         cwd: process.cwd(),
-        env: process.env,
+        env: { ...process.env, ...(envOverrides || {}) },
         stdio: ["ignore", "pipe", "pipe"],
       });
 
@@ -640,8 +648,35 @@ export class YapiMcpServer {
           .string()
           .optional()
           .describe("文档路径，默认 docs/interface-processing.md"),
+        yapiProjectId: z
+          .string()
+          .optional()
+          .describe("可选：单项目 projectId（与 yapiProjectToken 配套）"),
+        yapiProjectToken: z
+          .string()
+          .optional()
+          .describe("可选：单项目 token（与 yapiProjectId 配套）"),
+        outputDir: z
+          .string()
+          .optional()
+          .describe("可选：生成输出目录（默认 generated）"),
+        apiOutputPath: z
+          .string()
+          .optional()
+          .describe("可选：api.ts 输出文件路径（支持相对/绝对路径）"),
+        typeOutputPath: z
+          .string()
+          .optional()
+          .describe("可选：type.ts 输出文件路径（支持相对/绝对路径）"),
       },
-      async ({ docPath }) => {
+      async ({
+        docPath,
+        yapiProjectId,
+        yapiProjectToken,
+        outputDir,
+        apiOutputPath,
+        typeOutputPath,
+      }) => {
         try {
           const resolvedDocPath = path.resolve(process.cwd(), docPath || "docs/interface-processing.md");
           const checkResult = await this.validateGenerateDoc(resolvedDocPath);
@@ -652,14 +687,33 @@ export class YapiMcpServer {
             };
           }
 
-          const runResult = await this.runGenerateScript();
+          const envOverrides =
+            yapiProjectId && yapiProjectToken
+              ? {
+                  YAPI_PROJECT_ID: yapiProjectId,
+                  YAPI_PROJECT_TOKEN: yapiProjectToken,
+                }
+              : undefined;
+
+          const scriptArgs: string[] = [];
+          if (outputDir) scriptArgs.push(`--output-dir=${outputDir}`);
+          if (apiOutputPath) scriptArgs.push(`--api-output-path=${apiOutputPath}`);
+          if (typeOutputPath) scriptArgs.push(`--type-output-path=${typeOutputPath}`);
+
+          const runResult = await this.runGenerateScript(envOverrides, scriptArgs);
           if (!runResult.success) {
             return {
               content: [{ type: "text", text: `生成失败:\n${runResult.output}` }],
             };
           }
 
-          const outputDir = path.resolve(process.cwd(), "generated");
+          const resolvedOutputDir = path.resolve(process.cwd(), outputDir || "generated");
+          const resolvedApiOutputPath = apiOutputPath
+            ? path.resolve(process.cwd(), apiOutputPath)
+            : path.join(resolvedOutputDir, "api.ts");
+          const resolvedTypeOutputPath = typeOutputPath
+            ? path.resolve(process.cwd(), typeOutputPath)
+            : path.join(resolvedOutputDir, "type.ts");
           return {
             content: [
               {
@@ -667,8 +721,8 @@ export class YapiMcpServer {
                 text:
                   `已根据文档生成文件。\n` +
                   `文档: ${resolvedDocPath}\n` +
-                  `输出目录: ${outputDir}\n` +
-                  `文件: ${path.join(outputDir, "api.ts")}、${path.join(outputDir, "type.ts")}\n\n` +
+                  `输出目录: ${resolvedOutputDir}\n` +
+                  `文件: ${resolvedApiOutputPath}、${resolvedTypeOutputPath}\n\n` +
                   `${runResult.output}`,
               },
             ],

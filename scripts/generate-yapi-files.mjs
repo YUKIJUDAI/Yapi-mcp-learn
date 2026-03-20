@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { compile } from "json-schema-to-typescript";
+import prettier from "prettier";
 
 const ROOT_DIR = process.cwd();
-const OUTPUT_DIR = path.join(ROOT_DIR, "generated");
+const DEFAULT_OUTPUT_DIR = path.join(ROOT_DIR, "generated");
 const AJAX_DOC_PATH = path.join(ROOT_DIR, "docs/ajax.md");
 
 function parseEnv(envText) {
@@ -26,6 +27,40 @@ function parseTokenMap(rawToken) {
     tokenMap.set(projectId, tokenRest.join(":"));
   }
   return tokenMap;
+}
+
+function parseCliArgs(argv) {
+  const result = {};
+  for (const item of argv) {
+    if (!item.startsWith("--")) continue;
+    const [rawKey, ...rest] = item.slice(2).split("=");
+    const value = rest.join("=");
+    if (!rawKey || !value) continue;
+    result[rawKey] = value;
+  }
+  return result;
+}
+
+function resolveOutputPaths(cliArgs) {
+  const outputDirRaw = cliArgs["output-dir"] || "generated";
+  const outputDir = path.isAbsolute(outputDirRaw) ? outputDirRaw : path.resolve(ROOT_DIR, outputDirRaw);
+
+  const apiOutputPathRaw = cliArgs["api-output-path"];
+  const typeOutputPathRaw = cliArgs["type-output-path"];
+
+  const apiOutputPath = apiOutputPathRaw
+    ? path.isAbsolute(apiOutputPathRaw)
+      ? apiOutputPathRaw
+      : path.resolve(ROOT_DIR, apiOutputPathRaw)
+    : path.join(outputDir, "api.ts");
+
+  const typeOutputPath = typeOutputPathRaw
+    ? path.isAbsolute(typeOutputPathRaw)
+      ? typeOutputPathRaw
+      : path.resolve(ROOT_DIR, typeOutputPathRaw)
+    : path.join(outputDir, "type.ts");
+
+  return { outputDir, apiOutputPath, typeOutputPath };
 }
 
 function toPascalCase(input) {
@@ -185,15 +220,29 @@ function exportParamsInterface(tableData, name) {
   return "";
 }
 
-async function transformTs(schemaText, className) {
-  if (!schemaText) return [];
-  let json;
-  try {
-    json = JSON.parse(schemaText);
-  } catch {
-    return [];
+function pickSchemaForCompile(schemaText, responseMode = "data") {
+  const json = parseJsonSafe(schemaText);
+  if (!json || typeof json !== "object") return null;
+
+  // 统一从 data 节点向下取业务结构
+  const dataSchema = json?.properties?.data && typeof json.properties.data === "object" ? json.properties.data : json;
+
+  // 对 list/page 场景，类型只取 list 项结构
+  if (responseMode === "list" || responseMode === "page") {
+    const listItemsSchema = dataSchema?.properties?.list?.items;
+    if (listItemsSchema && typeof listItemsSchema === "object") {
+      return listItemsSchema;
+    }
   }
-  const schemaForCompile = json?.properties?.data ? json.properties.data : json;
+
+  return dataSchema;
+}
+
+async function transformTs(schemaText, className, responseMode = "data") {
+  if (!schemaText) return [];
+  const schemaForCompile = pickSchemaForCompile(schemaText, responseMode);
+  if (!schemaForCompile) return [];
+
   const normalizedSchema =
     schemaForCompile && typeof schemaForCompile === "object"
       ? {
@@ -346,9 +395,9 @@ async function generateByProject(baseUrl, projectId, token, gatewayPrefixFromEnv
     const apiFnName = `${toCamelCase(uniqueBaseName)}Api`;
     const requestPath = buildGatewayPath(effectiveGatewayPrefix, String(data.path || "/"));
 
-    const reqList = await transformTs(data.req_body_other, reqClassName);
-    const resList = await transformTs(data.res_body, resTypeName);
     const responseMode = inferResponseMode(data.res_body);
+    const reqList = await transformTs(data.req_body_other, reqClassName, "data");
+    const resList = await transformTs(data.res_body, resTypeName, responseMode);
     const ajaxMethod = inferAjaxMethod(data.method, responseMode);
     const hasReqParams = reqList.length > 0;
     const hasResType = resList.length > 0;
@@ -375,16 +424,26 @@ async function generateByProject(baseUrl, projectId, token, gatewayPrefixFromEnv
 async function main() {
   await readAndValidateAjaxDoc();
 
+  const cliArgs = parseCliArgs(process.argv.slice(2));
+  const { outputDir, apiOutputPath, typeOutputPath } = resolveOutputPaths(cliArgs);
   const envText = await fs.readFile(path.join(ROOT_DIR, ".env"), "utf8");
   const env = parseEnv(envText);
-  const baseUrl = (env.YAPI_BASE_URL || "").replace(/\/$/, "");
-  const gatewayPrefixFromEnv = env.YAPI_GATEWAY_PREFIX || "";
-  const tokenMap = parseTokenMap(env.YAPI_TOKEN || "");
+  const baseUrl = (cliArgs["yapi-base-url"] || env.YAPI_BASE_URL || "").replace(/\/$/, "");
+  const gatewayPrefixFromEnv = cliArgs["yapi-gateway-prefix"] || env.YAPI_GATEWAY_PREFIX || "";
+
+  const splitProjectId = cliArgs["yapi-project-id"] || env.YAPI_PROJECT_ID || "";
+  const splitProjectToken = cliArgs["yapi-project-token"] || env.YAPI_PROJECT_TOKEN || "";
+  const combinedToken = cliArgs["yapi-token"] || env.YAPI_TOKEN || "";
+
+  const tokenMap = parseTokenMap(
+    combinedToken || (splitProjectId && splitProjectToken ? `${splitProjectId}:${splitProjectToken}` : ""),
+  );
 
   if (!baseUrl) throw new Error("未找到 YAPI_BASE_URL");
   if (tokenMap.size === 0) throw new Error("未找到 YAPI_TOKEN（格式应为 projectId:token）");
 
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  // 默认输出目录仍是 generated，支持 agent 传入自定义路径。
+  await fs.mkdir(outputDir || DEFAULT_OUTPUT_DIR, { recursive: true });
 
   const typeBlocks = [];
   const apiBlocks = [
@@ -407,12 +466,29 @@ async function main() {
     apiBlocks.push(...result.generatedApis);
   }
 
-  await fs.writeFile(path.join(OUTPUT_DIR, "type.ts"), `${typeBlocks.join("\n")}\n`, "utf8");
-  await fs.writeFile(path.join(OUTPUT_DIR, "api.ts"), `${apiBlocks.join("\n")}\n`, "utf8");
+  const rawTypeContent = `${typeBlocks.join("\n")}\n`;
+  const rawApiContent = `${apiBlocks.join("\n")}\n`;
+
+  const prettierOptions = (await prettier.resolveConfig(ROOT_DIR)) || {};
+  const formattedTypeContent = await prettier.format(rawTypeContent, {
+    ...prettierOptions,
+    parser: "typescript",
+  });
+  const formattedApiContent = await prettier.format(rawApiContent, {
+    ...prettierOptions,
+    parser: "typescript",
+  });
+
+  await fs.mkdir(path.dirname(typeOutputPath), { recursive: true });
+  await fs.mkdir(path.dirname(apiOutputPath), { recursive: true });
+
+  // 若文件已存在，仅覆盖写入最新内容；不存在则创建后写入。
+  await fs.writeFile(typeOutputPath, formattedTypeContent, "utf8");
+  await fs.writeFile(apiOutputPath, formattedApiContent, "utf8");
 
   console.log(`生成完成: ${totalApis} 个接口`);
-  console.log(`输出文件: ${path.join(OUTPUT_DIR, "type.ts")}`);
-  console.log(`输出文件: ${path.join(OUTPUT_DIR, "api.ts")}`);
+  console.log(`输出文件: ${typeOutputPath}`);
+  console.log(`输出文件: ${apiOutputPath}`);
 }
 
 main().catch((error) => {

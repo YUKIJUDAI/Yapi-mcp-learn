@@ -29,6 +29,8 @@ function maskApiKey(key: string): string {
 interface CliArgs {
   "yapi-base-url"?: string;
   "yapi-token"?: string;
+  "yapi-project-id"?: string;
+  "yapi-project-token"?: string;
   port?: number;
   "yapi-cache-ttl"?: number;
   "yapi-log-level"?: string;
@@ -45,6 +47,14 @@ export function getServerConfig(): ServerConfig {
       "yapi-token": {
         type: "string",
         description: "YApi服务器授权Token",
+      },
+      "yapi-project-id": {
+        type: "string",
+        description: "YApi项目ID（与 yapi-project-token 配套使用）",
+      },
+      "yapi-project-token": {
+        type: "string",
+        description: "YApi项目Token（与 yapi-project-id 配套使用）",
       },
       port: {
         type: "number",
@@ -88,12 +98,18 @@ export function getServerConfig(): ServerConfig {
     config.configSources.yapiBaseUrl = "env";
   }
 
-  // Handle YAPI_TOKEN
+  // Handle YAPI_TOKEN / split token variables
   if (argv["yapi-token"]) {
     config.yapiToken = argv["yapi-token"];
     config.configSources.yapiToken = "cli";
+  } else if (argv["yapi-project-id"] && argv["yapi-project-token"]) {
+    config.yapiToken = `${argv["yapi-project-id"]}:${argv["yapi-project-token"]}`;
+    config.configSources.yapiToken = "cli";
   } else if (process.env.YAPI_TOKEN) {
     config.yapiToken = process.env.YAPI_TOKEN;
+    config.configSources.yapiToken = "env";
+  } else if (process.env.YAPI_PROJECT_ID && process.env.YAPI_PROJECT_TOKEN) {
+    config.yapiToken = `${process.env.YAPI_PROJECT_ID}:${process.env.YAPI_PROJECT_TOKEN}`;
     config.configSources.yapiToken = "env";
   }
 

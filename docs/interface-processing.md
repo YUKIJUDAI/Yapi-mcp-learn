@@ -9,7 +9,7 @@
 - 生成：
   - `generated/api.ts`
   - `generated/type.ts`
-- 生成结果遵循 `md/ajax.md` 的调用约定（`ajax.get/post/getList/postList/getPage/postPage`）
+- 生成结果遵循 `docs/ajax.md` 的调用约定（`ajax.get/post/getList/postList/getPage/postPage`）
 
 ## 运行方式
 
@@ -17,20 +17,39 @@
 pnpm run gen:yapi-files
 ```
 
+可选输出参数（按需插入到指定位置）：
+
+```bash
+pnpm run gen:yapi-files -- \
+  --output-dir=generated \
+  --api-output-path=generated/api.ts \
+  --type-output-path=generated/type.ts
+```
+
+说明：
+
+- 若文件已存在：仅覆盖写入新内容
+- 若文件不存在：自动创建后写入
+
 ## 环境变量
 
 必需：
 
 - `YAPI_BASE_URL`
-- `YAPI_TOKEN`，格式：`projectId:token`，多项目用逗号分隔：`p1:t1,p2:t2`
+- token 二选一：
+  - `YAPI_TOKEN`：格式 `projectId:token`，多项目用逗号分隔 `p1:t1,p2:t2`
+  - `YAPI_PROJECT_ID` + `YAPI_PROJECT_TOKEN`：单项目拆分变量
 
 可选：
 
 - `YAPI_GATEWAY_PREFIX`：强制网关前缀，优先级高于项目 `basepath`
+- agent 传参覆盖（通过 `yapi_generate_files_by_doc`）：
+  - `yapiProjectId`
+  - `yapiProjectToken`
 
 ## 生成流程
 
-1. 读取并校验 `md/ajax.md`（必须包含 `ajax.get/post/getList/postList/getPage/postPage`）
+1. 读取并校验 `docs/ajax.md`（必须包含 `ajax.get/post/getList/postList/getPage/postPage`）
 2. 按项目读取：
    - `/api/project/get`
    - `/api/interface/getCatMenu`
@@ -38,7 +57,8 @@ pnpm run gen:yapi-files
    - `/api/interface/get`
 3. 对接口按 `method + path` 排序，保证生成稳定
 4. 解析 JSON Schema，生成类型字段树
-5. 输出 `type.ts` 和 `api.ts`
+5. 将产物按项目分段插入（`// projectId: xxx`）
+6. 使用 Prettier 自动格式化后输出 `type.ts` 和 `api.ts`
 
 ## 命名规则（可读版）
 
@@ -61,6 +81,20 @@ pnpm run gen:yapi-files
 - 普通对象：`get` / `post`
 - `data.list`：`getList` / `postList`
 - 分页结构（`pageNum/pageSize/total/pages/list`）：`getPage` / `postPage`
+
+## List/Page 类型提取规则（本次同步）
+
+当接口被识别为 `list/page` 返回时，`Response` 类型不再使用整页结构，而是只取 `data.list.items` 的单项结构。
+
+示例：
+
+- 原始结构：`{ data: { list: Array<Item>, pageNum, pageSize, ... } }`
+- 生成结果：`FooResponse` 仅表示 `Item`
+- 调用方式：
+  - `ajax.getList<FooResponse>(...)`
+  - `ajax.getPage<FooResponse>(...)`
+
+这样能确保泛型语义与 `ajax` 返回值保持一致。
 
 ## 空类型处理（当前约定）
 
@@ -90,5 +124,6 @@ export const getSpielenPcPageApi = () =>
 ## 维护建议
 
 - 该文档变更后，建议执行一次 `pnpm run gen:yapi-files` 验证
-- 若修改了 `ajax` 约定，先同步更新 `md/ajax.md`，再调整生成脚本
+- 若修改了 `ajax` 约定，先同步更新 `docs/ajax.md`，再调整生成脚本
 - 生成文件为产物，不建议手工编辑（以脚本为准）
+- 如需由 agent 动态决定写入位置，优先使用工具参数：`outputDir` / `apiOutputPath` / `typeOutputPath`
