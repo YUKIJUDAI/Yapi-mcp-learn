@@ -4,9 +4,8 @@ sequenceDiagram
     participant Express Server
     participant SSEServerTransport
     participant McpServer
-    participant FigmaService
 
-    Client->>Express Server: GET /msg
+    Client->>Express Server: GET /mcp
     Note over Express Server: 建立 SSE 连接
 
     Express Server->>SSEServerTransport: 创建新的 SSEServerTransport 实例

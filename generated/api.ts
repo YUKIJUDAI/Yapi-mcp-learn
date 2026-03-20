@@ -3,7 +3,7 @@
 import { ajax } from "@/utils/ajax";
 import type * as Types from "./type";
 
-// 本文件由 scripts/generate-yapi-files.mjs 基于 md/ajax.md 自动生成
+// 本文件由 scripts/generate-yapi-files.mjs 基于 docs/ajax.md 自动生成
 
 // projectId: 117
 // 查询电竞酒店是否开通 (GET /admin/spielen/boolOpen)

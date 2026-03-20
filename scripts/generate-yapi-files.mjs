@@ -4,7 +4,7 @@ import { compile } from "json-schema-to-typescript";
 
 const ROOT_DIR = process.cwd();
 const OUTPUT_DIR = path.join(ROOT_DIR, "generated");
-const AJAX_DOC_PATH = path.join(ROOT_DIR, "md/ajax.md");
+const AJAX_DOC_PATH = path.join(ROOT_DIR, "docs/ajax.md");
 
 function parseEnv(envText) {
   const map = {};
@@ -393,7 +393,7 @@ async function main() {
     'import { ajax } from "@/utils/ajax";',
     'import type * as Types from "./type";',
     "",
-    "// 本文件由 scripts/generate-yapi-files.mjs 基于 md/ajax.md 自动生成",
+    "// 本文件由 scripts/generate-yapi-files.mjs 基于 docs/ajax.md 自动生成",
     "",
   ];
 

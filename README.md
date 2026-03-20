@@ -14,6 +14,17 @@ Yapi Auto MCP Server 是一个基于 [Model Context Protocol](https://modelconte
 
 通过 MCP 协议，AI 助手可以理解你的 YApi 接口结构，在编程过程中提供更准确的建议和代码生成。
 
+## 项目结构
+
+```text
+.
+├── src/          # MCP 服务源码
+├── scripts/      # 工具脚本（含接口生成器）
+├── generated/    # 生成产物（api.ts/type.ts）
+├── docs/         # 项目文档（ajax/mock/server/接口处理）
+└── README.md
+```
+
 ## 主要功能
 
 ### 🔍 接口查询和搜索
@@ -220,7 +231,7 @@ pnpm run gen:yapi-files
 
 ### 生成规则（当前实现）
 
-- 读取并校验 `md/ajax.md`，确保 `ajax.get/post/getList/postList/getPage/postPage` 约定存在
+- 读取并校验 `docs/ajax.md`，确保 `ajax.get/post/getList/postList/getPage/postPage` 约定存在
 - 从 YApi 拉取分类与接口详情，并按 `method + path` 稳定排序生成
 - 函数命名可读化，例如：`getSpielenPcPageApi`、`postSpielenAnfangWerbenAddApi`
 - 类型命名可读化，例如：`GetSpielenPcPageParams`、`GetSpielenPcPageResponse`
@@ -243,7 +254,7 @@ YAPI_TOKEN=projectId:your_token_here
 YAPI_GATEWAY_PREFIX=/your-gateway
 ```
 
-详细处理逻辑见：`md/接口处理方法.md`
+详细处理逻辑见：`docs/interface-processing.md`
 
 ## 高级配置
 

@@ -112,7 +112,7 @@ export class YapiMcpServer {
     try {
       await access(docAbsolutePath, constants.R_OK);
       const content = await readFile(docAbsolutePath, "utf8");
-      const requiredMarkers = ["transformTs", "api.ts", "type.ts", "YApi"];
+      const requiredMarkers = ["generated/api.ts", "generated/type.ts", "ajax.get", "YAPI_BASE_URL"];
       const missingMarkers = requiredMarkers.filter((marker) => !content.includes(marker));
 
       if (missingMarkers.length > 0) {
@@ -639,11 +639,11 @@ export class YapiMcpServer {
         docPath: z
           .string()
           .optional()
-          .describe("文档路径，默认 md/接口处理方法.md"),
+          .describe("文档路径，默认 docs/interface-processing.md"),
       },
       async ({ docPath }) => {
         try {
-          const resolvedDocPath = path.resolve(process.cwd(), docPath || "md/接口处理方法.md");
+          const resolvedDocPath = path.resolve(process.cwd(), docPath || "docs/interface-processing.md");
           const checkResult = await this.validateGenerateDoc(resolvedDocPath);
 
           if (!checkResult.valid) {
