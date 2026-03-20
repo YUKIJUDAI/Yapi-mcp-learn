@@ -4,6 +4,10 @@ import express, { Request, Response } from "express";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { IncomingMessage, ServerResponse } from "http";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { access, readFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { spawn } from "node:child_process";
+import path from "node:path";
 
 import { YApiService } from "./services/yapi/api";
 import { ProjectInfoCache } from "./services/yapi/cache";
@@ -99,6 +103,75 @@ export class YapiMcpServer {
       this.logger.error('更新缓存数据失败:', error);
       throw error;
     }
+  }
+
+  /**
+   * 校验文档是否符合接口生成说明
+   */
+  private async validateGenerateDoc(docAbsolutePath: string): Promise<{ valid: boolean; message: string }> {
+    try {
+      await access(docAbsolutePath, constants.R_OK);
+      const content = await readFile(docAbsolutePath, "utf8");
+      const requiredMarkers = ["transformTs", "api.ts", "type.ts", "YApi"];
+      const missingMarkers = requiredMarkers.filter((marker) => !content.includes(marker));
+
+      if (missingMarkers.length > 0) {
+        return {
+          valid: false,
+          message: `文档校验失败，缺少关键内容: ${missingMarkers.join(", ")}`,
+        };
+      }
+
+      return { valid: true, message: "文档校验通过" };
+    } catch (error) {
+      return {
+        valid: false,
+        message: `读取文档失败: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 执行生成脚本
+   */
+  private async runGenerateScript(): Promise<{ success: boolean; output: string }> {
+    return new Promise((resolve) => {
+      const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+      const child = spawn(command, ["run", "gen:yapi-files"], {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+
+      let stdout = "";
+      let stderr = "";
+
+      child.stdout.on("data", (data: Buffer) => {
+        stdout += data.toString();
+      });
+
+      child.stderr.on("data", (data: Buffer) => {
+        stderr += data.toString();
+      });
+
+      child.on("close", (code) => {
+        if (code === 0) {
+          resolve({ success: true, output: stdout.trim() || "生成成功" });
+        } else {
+          resolve({
+            success: false,
+            output: [stdout.trim(), stderr.trim()].filter(Boolean).join("\n"),
+          });
+        }
+      });
+
+      child.on("error", (error) => {
+        resolve({
+          success: false,
+          output: `执行生成脚本失败: ${error.message}`,
+        });
+      });
+    });
   }
 
   private registerTools(): void {
@@ -557,6 +630,57 @@ export class YapiMcpServer {
         }
       }
     );
+
+    // 根据文档生成 api.ts / type.ts
+    this.server.tool(
+      "yapi_generate_files_by_doc",
+      "根据接口处理文档生成对应的 api.ts 与 type.ts 文件",
+      {
+        docPath: z
+          .string()
+          .optional()
+          .describe("文档路径，默认 md/接口处理方法.md"),
+      },
+      async ({ docPath }) => {
+        try {
+          const resolvedDocPath = path.resolve(process.cwd(), docPath || "md/接口处理方法.md");
+          const checkResult = await this.validateGenerateDoc(resolvedDocPath);
+
+          if (!checkResult.valid) {
+            return {
+              content: [{ type: "text", text: `文档校验未通过: ${checkResult.message}` }],
+            };
+          }
+
+          const runResult = await this.runGenerateScript();
+          if (!runResult.success) {
+            return {
+              content: [{ type: "text", text: `生成失败:\n${runResult.output}` }],
+            };
+          }
+
+          const outputDir = path.resolve(process.cwd(), "generated");
+          return {
+            content: [
+              {
+                type: "text",
+                text:
+                  `已根据文档生成文件。\n` +
+                  `文档: ${resolvedDocPath}\n` +
+                  `输出目录: ${outputDir}\n` +
+                  `文件: ${path.join(outputDir, "api.ts")}、${path.join(outputDir, "type.ts")}\n\n` +
+                  `${runResult.output}`,
+              },
+            ],
+          };
+        } catch (error) {
+          this.logger.error("根据文档生成文件时出错:", error);
+          return {
+            content: [{ type: "text", text: `根据文档生成文件出错: ${error}` }],
+          };
+        }
+      },
+    );
   }
 
   async connect(transport: Transport): Promise<void> {
@@ -568,7 +692,7 @@ export class YapiMcpServer {
   async startHttpServer(port: number): Promise<void> {
     const app = express();
 
-    app.get("/sse", async (req: Request, res: Response) => {
+    app.get("/mcp", async (req: Request, res: Response) => {
       this.logger.info("建立新的SSE连接");
       this.sseTransport = new SSEServerTransport(
         "/messages",
@@ -577,23 +701,9 @@ export class YapiMcpServer {
       await this.server.connect(this.sseTransport);
     });
 
-    app.post("/messages", async (req: Request, res: Response) => {
-      if (!this.sseTransport) {
-        // Express types 可能与实际使用不匹配，直接使用
-        // @ts-ignore
-        res.sendStatus(400);
-        return;
-      }
-      await this.sseTransport.handlePostMessage(
-        req as unknown as IncomingMessage,
-        res as unknown as ServerResponse<IncomingMessage>,
-      );
-    });
-
     app.listen(port, () => {
       this.logger.info(`HTTP服务器监听端口 ${port}`);
-      this.logger.info(`SSE端点: http://localhost:${port}/sse`);
-      this.logger.info(`消息端点: http://localhost:${port}/messages`);
+      this.logger.info(`SSE端点: http://localhost:${port}/mcp`);
     });
   }
 }

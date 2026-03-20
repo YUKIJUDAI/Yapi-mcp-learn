@@ -1,0 +1,383 @@
+{
+  "projectId": "117",
+  "categoryCount": 9,
+  "totalInterfaces": 41,
+  "result": [
+    {
+      "category": {
+        "id": 1209,
+        "name": "公共分类",
+        "desc": "公共分类"
+      },
+      "total": 0,
+      "interfaces": []
+    },
+    {
+      "category": {
+        "id": 1223,
+        "name": "电竞酒店服务开通",
+        "desc": "电竞酒店服务"
+      },
+      "total": 3,
+      "interfaces": [
+        {
+          "id": 16859,
+          "title": "返回电竞酒店服务开通情况列表",
+          "method": "GET",
+          "path": "/admin/spielen/page",
+          "status": "done"
+        },
+        {
+          "id": 16864,
+          "title": "停用/启用电竞酒店开通情况",
+          "method": "GET",
+          "path": "/admin/spielen/switch",
+          "status": "done"
+        },
+        {
+          "id": 17914,
+          "title": "查询电竞酒店是否开通",
+          "method": "GET",
+          "path": "/admin/spielen/boolOpen",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1233,
+        "name": "电竞酒店电脑设备服务-硬件安全页面",
+        "desc": "电竞酒店电脑设备服务-硬件安全页面"
+      },
+      "total": 15,
+      "interfaces": [
+        {
+          "id": 17014,
+          "title": "分页查询电竞酒店电脑设备信息",
+          "method": "GET",
+          "path": "/spielenPc/page",
+          "status": "done"
+        },
+        {
+          "id": 17019,
+          "title": "查询电竞酒店电脑异常记录及变动情况",
+          "method": "GET",
+          "path": "/spielenPc/viewCheck",
+          "status": "done"
+        },
+        {
+          "id": 17024,
+          "title": "电脑异常变更应用",
+          "method": "GET",
+          "path": "/spielenPc/applyChange",
+          "status": "done"
+        },
+        {
+          "id": 17029,
+          "title": "电脑信息编辑",
+          "method": "GET",
+          "path": "/spielenPc/edit",
+          "status": "done"
+        },
+        {
+          "id": 17034,
+          "title": "电脑信息获取",
+          "method": "GET",
+          "path": "/spielenPc/get",
+          "status": "done"
+        },
+        {
+          "id": 17039,
+          "title": "电脑信息删除",
+          "method": "GET",
+          "path": "/spielenPc/remove",
+          "status": "done"
+        },
+        {
+          "id": 17044,
+          "title": "电脑信息更新记录分页查询",
+          "method": "GET",
+          "path": "/spielenPc/record/page",
+          "status": "done"
+        },
+        {
+          "id": 17049,
+          "title": "电脑检测记录分页查询",
+          "method": "GET",
+          "path": "/spielenPc/checkLog/page",
+          "status": "done"
+        },
+        {
+          "id": 17054,
+          "title": "按照房间查看房设备数据",
+          "method": "GET",
+          "path": "/spielenPc/listRoomByRoom",
+          "status": "done"
+        },
+        {
+          "id": 17064,
+          "title": "电脑与房间解绑",
+          "method": "GET",
+          "path": "/spielenPc/unbind",
+          "status": "done"
+        },
+        {
+          "id": 17069,
+          "title": "电脑与房间绑定",
+          "method": "GET",
+          "path": "/spielenPc/bind",
+          "status": "done"
+        },
+        {
+          "id": 17844,
+          "title": "查询房间已绑定及未绑定的设备列表",
+          "method": "GET",
+          "path": "/spielenPc/listDevice",
+          "status": "done"
+        },
+        {
+          "id": 17849,
+          "title": "查询房间下绑定的设备详情列表",
+          "method": "GET",
+          "path": "/spielenPc/listRoomDeviceDetail",
+          "status": "done"
+        },
+        {
+          "id": 18119,
+          "title": "重新设置房间绑定数据",
+          "method": "GET",
+          "path": "/spielenPc/resetRoomBind",
+          "status": "done"
+        },
+        {
+          "id": 18124,
+          "title": "查询电竞酒店是否开通",
+          "method": "GET",
+          "path": "/spielenPc/boolOpen",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1235,
+        "name": "电竞酒店电脑设备服务-图片推广页面",
+        "desc": "电竞酒店电脑设备服务-图片推广页面"
+      },
+      "total": 5,
+      "interfaces": [
+        {
+          "id": 17084,
+          "title": "分页查询图片推广数据",
+          "method": "GET",
+          "path": "/spielenPcImagePromote/pageImagePromote",
+          "status": "done"
+        },
+        {
+          "id": 17089,
+          "title": "新建图片推广数据",
+          "method": "GET",
+          "path": "/spielenPcImagePromote/create",
+          "status": "done"
+        },
+        {
+          "id": 17094,
+          "title": "编辑图片推广数据",
+          "method": "GET",
+          "path": "/spielenPcImagePromote/edit",
+          "status": "done"
+        },
+        {
+          "id": 17099,
+          "title": "启用/停用图片推广数据",
+          "method": "GET",
+          "path": "/spielenPcImagePromote/editShow",
+          "status": "done"
+        },
+        {
+          "id": 17104,
+          "title": "删除图片推广数据",
+          "method": "GET",
+          "path": "/spielenPcImagePromote/remove",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1237,
+        "name": "电竞酒店电脑设备服务-轮播消息页面",
+        "desc": "电竞酒店电脑设备服务-轮播消息页面"
+      },
+      "total": 5,
+      "interfaces": [
+        {
+          "id": 17109,
+          "title": "分页查询轮播消息记录",
+          "method": "GET",
+          "path": "/spielenPcMessageCycle/pageMessageCycle",
+          "status": "done"
+        },
+        {
+          "id": 17114,
+          "title": "新建轮播消息",
+          "method": "GET",
+          "path": "/spielenPcMessageCycle/create",
+          "status": "done"
+        },
+        {
+          "id": 17119,
+          "title": "编辑轮播消息",
+          "method": "GET",
+          "path": "/spielenPcMessageCycle/edit",
+          "status": "done"
+        },
+        {
+          "id": 17124,
+          "title": "启用/停用轮播消息",
+          "method": "GET",
+          "path": "/spielenPcMessageCycle/editShow",
+          "status": "done"
+        },
+        {
+          "id": 17129,
+          "title": "删除轮播消息",
+          "method": "GET",
+          "path": "/spielenPcMessageCycle/remove",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1239,
+        "name": "电竞酒店电脑设备服务-推送消息页面",
+        "desc": "电竞酒店电脑设备服务-推送消息页面"
+      },
+      "total": 2,
+      "interfaces": [
+        {
+          "id": 17134,
+          "title": "分页查询推送消息记录",
+          "method": "GET",
+          "path": "/spielenPcMessagePush/pageMessagePush",
+          "status": "done"
+        },
+        {
+          "id": 17139,
+          "title": "新增并发送推送消息",
+          "method": "GET",
+          "path": "/spielenPcMessagePush/push",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1241,
+        "name": "电竞酒店电脑设备服务-硬件记录页面",
+        "desc": "电竞酒店电脑设备服务-硬件记录页面"
+      },
+      "total": 4,
+      "interfaces": [
+        {
+          "id": 17144,
+          "title": "分页查询电竞酒店电脑设备开机记录",
+          "method": "GET",
+          "path": "/spielenPcRecord/pageBootRecord",
+          "status": "done"
+        },
+        {
+          "id": 17149,
+          "title": "导出电竞酒店电脑设备开机记录",
+          "method": "GET",
+          "path": "/spielenPcRecord/exportBootRecord",
+          "status": "done"
+        },
+        {
+          "id": 17154,
+          "title": "分页查询电竞酒店电脑设备变动记录",
+          "method": "GET",
+          "path": "/spielenPcRecord/pageChangeRecord",
+          "status": "done"
+        },
+        {
+          "id": 17159,
+          "title": "查询电竞酒店电脑设备变动记录详情",
+          "method": "GET",
+          "path": "/spielenPcRecord/getChangeRecordDetail",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 1303,
+        "name": "客户端启动广告",
+        "desc": "客户端启动广告"
+      },
+      "total": 5,
+      "interfaces": [
+        {
+          "id": 18179,
+          "title": "新增启动广告",
+          "method": "POST",
+          "path": "/spielen/anfang/werben/add",
+          "status": "done"
+        },
+        {
+          "id": 18184,
+          "title": "更新启动广告",
+          "method": "POST",
+          "path": "/spielen/anfang/werben/update",
+          "status": "done"
+        },
+        {
+          "id": 18189,
+          "title": "删除广告",
+          "method": "POST",
+          "path": "/spielen/anfang/werben/deleted",
+          "status": "done"
+        },
+        {
+          "id": 18194,
+          "title": "分页查询启动广告",
+          "method": "POST",
+          "path": "/spielen/anfang/werben/page",
+          "status": "done"
+        },
+        {
+          "id": 18199,
+          "title": "根据id更新启动广告状态",
+          "method": "POST",
+          "path": "/spielen/anfang/werben/updateStatus",
+          "status": "done"
+        }
+      ]
+    },
+    {
+      "category": {
+        "id": 13091,
+        "name": "Yapi-MCP服务接口",
+        "desc": "自动同步：本项目HTTP服务接口"
+      },
+      "total": 2,
+      "interfaces": [
+        {
+          "id": 103292,
+          "title": "GET /sse",
+          "method": "GET",
+          "path": "/sse",
+          "status": "done"
+        },
+        {
+          "id": 103301,
+          "title": "POST /messages",
+          "method": "POST",
+          "path": "/messages",
+          "status": "done"
+        }
+      ]
+    }
+  ]
+}

@@ -133,7 +133,7 @@ YAPI_BASE_URL=https://your-yapi-domain.com
 YAPI_TOKEN=projectId:your_token_here,projectId2:your_token2_here
 
 # 服务器配置
-PORT=3388
+PORT=3305
 
 # 可选配置
 YAPI_CACHE_TTL=10
@@ -154,7 +154,7 @@ pnpm run dev
 {
   "mcpServers": {
     "yapi-mcp": {
-      "url": "http://localhost:3388/sse"
+      "url": "http://localhost:3305/mcp"
     }
   }
 }
@@ -205,6 +205,46 @@ Token 格式说明：
 4. **更新接口**：
    > "更新用户登录接口，添加验证码参数"
 
+## 接口文件生成（ajax 风格）
+
+项目内置了基于 YApi 的接口文件生成脚本，会生成：
+
+- `generated/api.ts`
+- `generated/type.ts`
+
+### 生成命令
+
+```bash
+pnpm run gen:yapi-files
+```
+
+### 生成规则（当前实现）
+
+- 读取并校验 `md/ajax.md`，确保 `ajax.get/post/getList/postList/getPage/postPage` 约定存在
+- 从 YApi 拉取分类与接口详情，并按 `method + path` 稳定排序生成
+- 函数命名可读化，例如：`getSpielenPcPageApi`、`postSpielenAnfangWerbenAddApi`
+- 类型命名可读化，例如：`GetSpielenPcPageParams`、`GetSpielenPcPageResponse`
+- 空类型处理：
+  - 空入参：不生成 `Params`，函数不带 `data`
+  - 空返回：不生成 `Response`，调用不带泛型
+- 自动选择 ajax 方法：
+  - 普通对象：`get/post`
+  - `data.list`：`getList/postList`
+  - 分页结构（`pageNum/pageSize/total/pages/list`）：`getPage/postPage`
+
+### 生成相关环境变量
+
+```env
+# 必需
+YAPI_BASE_URL=https://your-yapi-domain.com
+YAPI_TOKEN=projectId:your_token_here
+
+# 可选：强制网关前缀，优先级高于项目 basepath
+YAPI_GATEWAY_PREFIX=/your-gateway
+```
+
+详细处理逻辑见：`md/接口处理方法.md`
+
 ## 高级配置
 
 ### 命令行参数详解
@@ -215,7 +255,7 @@ Token 格式说明：
 | `--yapi-token`     | YApi 项目 Token（支持多项目） | `--yapi-token=1026:token1,1027:token2`     | -      |
 | `--yapi-cache-ttl` | 缓存时效（分钟）              | `--yapi-cache-ttl=10`                      | 10     |
 | `--yapi-log-level` | 日志级别                      | `--yapi-log-level=info`                    | info   |
-| `--port`           | HTTP 服务端口（SSE 模式）     | `--port=3388`                              | 3388   |
+| `--port`           | HTTP 服务端口（SSE 模式）     | `--port=3305`                              | 3305   |
 | `--stdio`          | 启用 stdio 模式（MCP 必需）   | `--stdio`                                  | -      |
 
 ### 环境变量说明
@@ -228,7 +268,7 @@ YAPI_BASE_URL=https://your-yapi-domain.com
 YAPI_TOKEN=projectId:your_token_here
 
 # 可选配置
-PORT=3388                    # HTTP 服务端口
+PORT=3305                    # HTTP 服务端口
 YAPI_CACHE_TTL=10           # 缓存时效（分钟）
 YAPI_LOG_LEVEL=info         # 日志级别：debug, info, warn, error, none
 ```
