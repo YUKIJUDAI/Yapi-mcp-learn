@@ -755,9 +755,23 @@ export class YapiMcpServer {
       await this.server.connect(this.sseTransport);
     });
 
+    // SSE 传输下，客户端实际 JSON-RPC 消息通过该端点发送。
+    app.post("/messages", async (req: Request, res: Response) => {
+      if (!this.sseTransport) {
+        // @ts-ignore Express 响应对象类型与 SDK 期望不完全一致
+        res.sendStatus(400);
+        return;
+      }
+      await this.sseTransport.handlePostMessage(
+        req as unknown as IncomingMessage,
+        res as unknown as ServerResponse<IncomingMessage>,
+      );
+    });
+
     app.listen(port, () => {
       this.logger.info(`HTTP服务器监听端口 ${port}`);
       this.logger.info(`SSE端点: http://localhost:${port}/mcp`);
+      this.logger.info(`消息端点: http://localhost:${port}/messages`);
     });
   }
 }
